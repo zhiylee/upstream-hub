@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useChannels, useChannelRates } from "@/lib/queries"
-import { channelTypeLabel, relativeTime } from "@/lib/format"
+import { channelTypeLabel, rechargeMultiplierLabel, relativeTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Channel } from "@/lib/api-types"
 
@@ -49,7 +49,7 @@ function ChannelRateRow({ channel }: { channel: Channel }) {
         </div>
         <span className="text-[11px] text-muted-foreground">
           {rates.length > 0
-            ? `${rates.length} 个分组 · ${relativeTime(latest)}`
+            ? `${rates.length} 个分组 · 充值倍率 ${rechargeMultiplierLabel(channel.recharge_multiplier)} · ${relativeTime(latest)}`
             : "暂无数据"}
         </span>
       </div>
@@ -112,7 +112,7 @@ export function ChannelRatesPanel() {
       <CardHeader className="flex flex-row items-baseline justify-between pb-2">
         <CardTitle className="text-base font-semibold">{"分组倍率"}</CardTitle>
         <span className="text-xs text-muted-foreground">
-          {"每个渠道的当前可用分组及倍率（绿=折扣 · 红=溢价）"}
+          {"已按渠道充值倍率换算（绿=折扣 · 红=溢价）"}
         </span>
       </CardHeader>
       <CardContent className="space-y-2">

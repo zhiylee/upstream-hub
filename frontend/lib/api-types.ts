@@ -40,6 +40,7 @@ export interface Channel {
   turnstile_enabled: boolean
   captcha_config_id?: number | null
   balance_threshold: number
+  recharge_multiplier: number
   monitor_enabled: boolean
   last_balance?: number | null
   last_balance_at?: string | null

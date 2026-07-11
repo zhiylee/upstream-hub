@@ -26,7 +26,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog"
 import { useChannels, useChannelRates } from "@/lib/queries"
 import { apiFetch } from "@/lib/api"
 import { useTriggerRefresh } from "@/lib/refresh-context"
-import { channelTypeLabel, money, relativeTime } from "@/lib/format"
+import { channelTypeLabel, money, rechargeMultiplierLabel, relativeTime } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { syncChannelStream, testLoginStream, type ProgressEvent } from "@/lib/sync-stream"
 import type { Channel } from "@/lib/api-types"
@@ -442,6 +442,7 @@ export function ChannelCards() {
                 <div className="mt-3 divide-y divide-border">
                   <Row label="余额">{money(c.last_balance)}</Row>
                   <Row label="阈值">{c.balance_threshold > 0 ? money(c.balance_threshold) : "未设置"}</Row>
+                  <Row label="充值倍率">{rechargeMultiplierLabel(c.recharge_multiplier)}</Row>
                   <Row label="状态">
                     <span className={cn("inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium", meta.cls)}>
                       {meta.label}

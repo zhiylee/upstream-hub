@@ -102,19 +102,20 @@ func (s *Service) RefreshBalance(ctx context.Context, c *storage.Channel) error 
 	if sampledAt.IsZero() {
 		sampledAt = time.Now()
 	}
-	if err := s.channels.UpdateBalance(c.ID, res.Balance, &sampledAt, ""); err != nil {
+	metricBalance := res.Balance / c.EffectiveRechargeMultiplier()
+	if err := s.channels.UpdateBalance(c.ID, metricBalance, &sampledAt, ""); err != nil {
 		return err
 	}
 	_ = s.rates.AppendBalance(&storage.BalanceSnapshot{
 		ChannelID: c.ID,
-		Balance:   res.Balance,
+		Balance:   metricBalance,
 		SampledAt: sampledAt,
 	})
-	progress.OK(ctx, progress.StageBalance, fmt.Sprintf("当前余额 %.4f", res.Balance),
-		map[string]any{"balance": res.Balance})
+	progress.OK(ctx, progress.StageBalance, fmt.Sprintf("当前余额 %.4f", metricBalance),
+		map[string]any{"balance": metricBalance})
 
-	if c.BalanceThreshold > 0 && res.Balance < c.BalanceThreshold {
-		body := fmt.Sprintf("当前余额: %.4f，阈值: %.4f", res.Balance, c.BalanceThreshold)
+	if c.BalanceThreshold > 0 && metricBalance < c.BalanceThreshold {
+		body := fmt.Sprintf("当前余额: %.4f，阈值: %.4f", metricBalance, c.BalanceThreshold)
 		_ = s.dispatcher.Dispatch(ctx, notify.Message{
 			Event:     storage.EventBalanceLow,
 			ChannelID: c.ID,
@@ -152,14 +153,20 @@ func (s *Service) RefreshRates(ctx context.Context, c *storage.Channel) error {
 	}
 
 	now := time.Now()
+	metricDivisor := c.EffectiveRechargeMultiplier()
 	changes := make([]notify.RateChange, 0, len(results))
 	for _, r := range results {
+		metricRatio := r.Ratio / metricDivisor
+		metricCompletionRatio := r.CompletionRatio
+		if r.CompletionRatio != 0 {
+			metricCompletionRatio = r.CompletionRatio / metricDivisor
+		}
 		prev, err := s.rates.Upsert(&storage.RateSnapshot{
 			ChannelID:       c.ID,
 			ModelName:       r.ModelName,
 			Description:     r.Description,
-			Ratio:           r.Ratio,
-			CompletionRatio: r.CompletionRatio,
+			Ratio:           metricRatio,
+			CompletionRatio: metricCompletionRatio,
 			LastSeenAt:      now,
 		})
 		if err != nil {
@@ -169,7 +176,7 @@ func (s *Service) RefreshRates(ctx context.Context, c *storage.Channel) error {
 		if prev == nil {
 			continue
 		}
-		if prev.Ratio == r.Ratio && prev.CompletionRatio == r.CompletionRatio {
+		if prev.Ratio == metricRatio && prev.CompletionRatio == metricCompletionRatio {
 			continue
 		}
 		oldRatio := prev.Ratio
@@ -178,17 +185,17 @@ func (s *Service) RefreshRates(ctx context.Context, c *storage.Channel) error {
 			ChannelID:          c.ID,
 			ModelName:          r.ModelName,
 			OldRatio:           &oldRatio,
-			NewRatio:           r.Ratio,
+			NewRatio:           metricRatio,
 			OldCompletionRatio: &oldComp,
-			NewCompletionRatio: r.CompletionRatio,
+			NewCompletionRatio: metricCompletionRatio,
 			ChangedAt:          now,
 		})
 		changes = append(changes, notify.RateChange{
 			GroupName: r.ModelName,
 			OldRatio:  oldRatio,
-			NewRatio:  r.Ratio,
+			NewRatio:  metricRatio,
 			OldComp:   oldComp,
-			NewComp:   r.CompletionRatio,
+			NewComp:   metricCompletionRatio,
 			ChangedAt: now,
 		})
 	}

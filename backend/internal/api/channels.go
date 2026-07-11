@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -31,30 +32,32 @@ func registerChannels(g *gin.RouterGroup, d *Deps) {
 }
 
 type channelInput struct {
-	Name             string                 `json:"name" binding:"required"`
-	Type             storage.ChannelType    `json:"type" binding:"required"`
-	SiteURL          string                 `json:"site_url" binding:"required"`
-	Username         string                 `json:"username"`
-	Password         string                 `json:"password"`
-	CredentialMode   storage.CredentialMode `json:"credential_mode"`
-	TokenCredential  string                 `json:"token_credential"` // JSON：token 模式时填写
-	TurnstileEnabled bool                   `json:"turnstile_enabled"`
-	CaptchaConfigID  *uint                  `json:"captcha_config_id"`
-	BalanceThreshold float64                `json:"balance_threshold"`
-	MonitorEnabled   bool                   `json:"monitor_enabled"`
+	Name               string                 `json:"name" binding:"required"`
+	Type               storage.ChannelType    `json:"type" binding:"required"`
+	SiteURL            string                 `json:"site_url" binding:"required"`
+	Username           string                 `json:"username"`
+	Password           string                 `json:"password"`
+	CredentialMode     storage.CredentialMode `json:"credential_mode"`
+	TokenCredential    string                 `json:"token_credential"` // JSON：token 模式时填写
+	TurnstileEnabled   bool                   `json:"turnstile_enabled"`
+	CaptchaConfigID    *uint                  `json:"captcha_config_id"`
+	BalanceThreshold   float64                `json:"balance_threshold"`
+	RechargeMultiplier *float64               `json:"recharge_multiplier"`
+	MonitorEnabled     bool                   `json:"monitor_enabled"`
 }
 
 type channelUpdateInput struct {
-	Name             *string                 `json:"name"`
-	SiteURL          *string                 `json:"site_url"`
-	Username         *string                 `json:"username"`
-	Password         *string                 `json:"password"`
-	CredentialMode   *storage.CredentialMode `json:"credential_mode"`
-	TokenCredential  *string                 `json:"token_credential"`
-	TurnstileEnabled *bool                   `json:"turnstile_enabled"`
-	CaptchaConfigID  *uint                   `json:"captcha_config_id"`
-	BalanceThreshold *float64                `json:"balance_threshold"`
-	MonitorEnabled   *bool                   `json:"monitor_enabled"`
+	Name               *string                 `json:"name"`
+	SiteURL            *string                 `json:"site_url"`
+	Username           *string                 `json:"username"`
+	Password           *string                 `json:"password"`
+	CredentialMode     *storage.CredentialMode `json:"credential_mode"`
+	TokenCredential    *string                 `json:"token_credential"`
+	TurnstileEnabled   *bool                   `json:"turnstile_enabled"`
+	CaptchaConfigID    *uint                   `json:"captcha_config_id"`
+	BalanceThreshold   *float64                `json:"balance_threshold"`
+	RechargeMultiplier *float64                `json:"recharge_multiplier"`
+	MonitorEnabled     *bool                   `json:"monitor_enabled"`
 }
 
 func listChannels(c *gin.Context, d *Deps) {
@@ -72,18 +75,24 @@ func createChannel(c *gin.Context, d *Deps) {
 		fail(c, http.StatusBadRequest, err)
 		return
 	}
+	rechargeMultiplier, err := validateRechargeMultiplier(in.RechargeMultiplier)
+	if err != nil {
+		fail(c, http.StatusBadRequest, err)
+		return
+	}
 	created, err := d.ChannelSvc.Create(channel.CreateInput{
-		Name:             in.Name,
-		Type:             in.Type,
-		SiteURL:          in.SiteURL,
-		Username:         in.Username,
-		Password:         in.Password,
-		CredentialMode:   in.CredentialMode,
-		TokenCredential:  in.TokenCredential,
-		TurnstileEnabled: in.TurnstileEnabled,
-		CaptchaConfigID:  in.CaptchaConfigID,
-		BalanceThreshold: in.BalanceThreshold,
-		MonitorEnabled:   in.MonitorEnabled,
+		Name:               in.Name,
+		Type:               in.Type,
+		SiteURL:            in.SiteURL,
+		Username:           in.Username,
+		Password:           in.Password,
+		CredentialMode:     in.CredentialMode,
+		TokenCredential:    in.TokenCredential,
+		TurnstileEnabled:   in.TurnstileEnabled,
+		CaptchaConfigID:    in.CaptchaConfigID,
+		BalanceThreshold:   in.BalanceThreshold,
+		RechargeMultiplier: rechargeMultiplier,
+		MonitorEnabled:     in.MonitorEnabled,
 	})
 	if err != nil {
 		fail(c, http.StatusInternalServerError, err)
@@ -117,23 +126,38 @@ func updateChannel(c *gin.Context, d *Deps) {
 		fail(c, http.StatusBadRequest, err)
 		return
 	}
+	if _, err := validateRechargeMultiplier(in.RechargeMultiplier); err != nil {
+		fail(c, http.StatusBadRequest, err)
+		return
+	}
 	updated, err := d.ChannelSvc.Update(id, channel.UpdateInput{
-		Name:             in.Name,
-		SiteURL:          in.SiteURL,
-		Username:         in.Username,
-		Password:         in.Password,
-		CredentialMode:   in.CredentialMode,
-		TokenCredential:  in.TokenCredential,
-		TurnstileEnabled: in.TurnstileEnabled,
-		CaptchaConfigID:  in.CaptchaConfigID,
-		BalanceThreshold: in.BalanceThreshold,
-		MonitorEnabled:   in.MonitorEnabled,
+		Name:               in.Name,
+		SiteURL:            in.SiteURL,
+		Username:           in.Username,
+		Password:           in.Password,
+		CredentialMode:     in.CredentialMode,
+		TokenCredential:    in.TokenCredential,
+		TurnstileEnabled:   in.TurnstileEnabled,
+		CaptchaConfigID:    in.CaptchaConfigID,
+		BalanceThreshold:   in.BalanceThreshold,
+		RechargeMultiplier: in.RechargeMultiplier,
+		MonitorEnabled:     in.MonitorEnabled,
 	})
 	if err != nil {
 		fail(c, http.StatusInternalServerError, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+func validateRechargeMultiplier(v *float64) (float64, error) {
+	if v == nil {
+		return 1, nil
+	}
+	if *v <= 0 {
+		return 0, errors.New("充值倍率必须大于 0")
+	}
+	return *v, nil
 }
 
 func deleteChannel(c *gin.Context, d *Deps) {

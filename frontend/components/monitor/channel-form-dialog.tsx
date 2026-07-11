@@ -62,6 +62,7 @@ interface FormState {
   sub2api_access_token: string
 
   balance_threshold: string
+  recharge_multiplier: string
   monitor_enabled: boolean
   turnstile_enabled: boolean
   captcha_config_id: string // "" 表示不绑定
@@ -79,6 +80,7 @@ function initialState(c?: Channel | null): FormState {
     newapi_user_id: "",
     sub2api_access_token: "",
     balance_threshold: c?.balance_threshold != null ? String(c.balance_threshold) : "0",
+    recharge_multiplier: c?.recharge_multiplier != null ? String(c.recharge_multiplier) : "1",
     monitor_enabled: c?.monitor_enabled ?? true,
     turnstile_enabled: c?.turnstile_enabled ?? false,
     captcha_config_id: c?.captcha_config_id != null ? String(c.captcha_config_id) : "",
@@ -130,6 +132,10 @@ export function ChannelFormDialog({ open, onOpenChange, channel }: ChannelFormDi
       if (!Number.isFinite(threshold) || threshold < 0) {
         throw new Error("余额阈值必须是非负数")
       }
+      const rechargeMultiplier = Number(form.recharge_multiplier)
+      if (!Number.isFinite(rechargeMultiplier) || rechargeMultiplier <= 0) {
+        throw new Error("充值倍率必须大于 0")
+      }
 
       // token 模式：用户填的字段对应不同 connector 的 token JSON
       let tokenCredential = ""
@@ -178,6 +184,7 @@ export function ChannelFormDialog({ open, onOpenChange, channel }: ChannelFormDi
           username: form.username,
           credential_mode: form.credential_mode,
           balance_threshold: threshold,
+          recharge_multiplier: rechargeMultiplier,
           monitor_enabled: form.monitor_enabled,
           turnstile_enabled: !isTokenMode && form.turnstile_enabled,
           captcha_config_id: captchaConfigID,
@@ -200,6 +207,7 @@ export function ChannelFormDialog({ open, onOpenChange, channel }: ChannelFormDi
             password: isTokenMode ? "" : form.password,
             token_credential: isTokenMode ? tokenCredential : "",
             balance_threshold: threshold,
+            recharge_multiplier: rechargeMultiplier,
             monitor_enabled: form.monitor_enabled,
             turnstile_enabled: !isTokenMode && form.turnstile_enabled,
             captcha_config_id: captchaConfigID,
@@ -419,6 +427,22 @@ export function ChannelFormDialog({ open, onOpenChange, channel }: ChannelFormDi
               ) : null}
             </>
           ) : null}
+
+          <div className="space-y-1.5 rounded-lg border border-border bg-muted/20 p-3">
+            <Label htmlFor="recharge-multiplier">充值倍率</Label>
+            <Input
+              id="recharge-multiplier"
+              type="number"
+              step="any"
+              min="0.000001"
+              value={form.recharge_multiplier}
+              onChange={(e) => setForm({ ...form, recharge_multiplier: e.target.value })}
+              disabled={submitting}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {"例如冲 1 到账 10 填 10；余额和分组倍率会除以该倍率统一观测。"}
+            </p>
+          </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="threshold">余额阈值（低于此值发告警，0 = 不告警）</Label>

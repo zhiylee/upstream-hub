@@ -38,17 +38,18 @@ const (
 //
 // 复用 PasswordCipher 而不新增 TokenCipher 是为了让现有的 GORM 行 / 加密路径 / 迁移流程零变动。
 type Channel struct {
-	ID               uint           `gorm:"primaryKey" json:"id"`
-	Name             string         `gorm:"size:128;not null;uniqueIndex" json:"name"`
-	Type             ChannelType    `gorm:"size:32;not null;index" json:"type"`
-	SiteURL          string         `gorm:"size:512;not null" json:"site_url"`
-	Username         string         `gorm:"size:256;not null" json:"username"`
-	PasswordCipher   string         `gorm:"size:4096;not null" json:"-"`
-	CredentialMode   CredentialMode `gorm:"size:16;not null;default:'password'" json:"credential_mode"`
-	TurnstileEnabled bool           `gorm:"default:false" json:"turnstile_enabled"`
-	CaptchaConfigID  *uint          `json:"captcha_config_id,omitempty"`
-	BalanceThreshold float64        `gorm:"default:0" json:"balance_threshold"`
-	MonitorEnabled   bool           `gorm:"default:true" json:"monitor_enabled"`
+	ID                 uint           `gorm:"primaryKey" json:"id"`
+	Name               string         `gorm:"size:128;not null;uniqueIndex" json:"name"`
+	Type               ChannelType    `gorm:"size:32;not null;index" json:"type"`
+	SiteURL            string         `gorm:"size:512;not null" json:"site_url"`
+	Username           string         `gorm:"size:256;not null" json:"username"`
+	PasswordCipher     string         `gorm:"size:4096;not null" json:"-"`
+	CredentialMode     CredentialMode `gorm:"size:16;not null;default:'password'" json:"credential_mode"`
+	TurnstileEnabled   bool           `gorm:"default:false" json:"turnstile_enabled"`
+	CaptchaConfigID    *uint          `json:"captcha_config_id,omitempty"`
+	BalanceThreshold   float64        `gorm:"default:0" json:"balance_threshold"`
+	RechargeMultiplier float64        `gorm:"not null;default:1" json:"recharge_multiplier"`
+	MonitorEnabled     bool           `gorm:"default:true" json:"monitor_enabled"`
 
 	// 最近一次采集结果（聚合视图，便于列表页直接展示）
 	LastBalance   *float64   `json:"last_balance,omitempty"`
@@ -61,6 +62,13 @@ type Channel struct {
 }
 
 func (Channel) TableName() string { return "channels" }
+
+func (c Channel) EffectiveRechargeMultiplier() float64 {
+	if c.RechargeMultiplier > 0 {
+		return c.RechargeMultiplier
+	}
+	return 1
+}
 
 // AuthSession 渠道登录后保存的凭据，按 ChannelID 一对一关联。
 // *Cipher 字段都用 AES-GCM 加密；UserID 是上游账号 ID 字符串（非敏感），明文存放。

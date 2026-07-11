@@ -44,6 +44,11 @@ export function money(value: number | null | undefined, opts?: { precise?: boole
   )
 }
 
+export function rechargeMultiplierLabel(value: number | null | undefined) {
+  const v = value != null && Number.isFinite(value) && value > 0 ? value : 1
+  return `x${v.toLocaleString("en-US", { maximumFractionDigits: 4 })}`
+}
+
 /** 把倍率渲染成"1.20 → 1.50"。 */
 export function ratioArrow(from: number | null | undefined, to: number) {
   const f = from == null ? "—" : from.toFixed(2)

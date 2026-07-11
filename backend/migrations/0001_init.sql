@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS channels (
     turnstile_enabled BOOLEAN DEFAULT false,
     captcha_config_id BIGINT,
     balance_threshold DOUBLE PRECISION DEFAULT 0,
+    recharge_multiplier DOUBLE PRECISION NOT NULL DEFAULT 1,
     monitor_enabled   BOOLEAN DEFAULT true,
     last_balance      DOUBLE PRECISION,
     last_balance_at   TIMESTAMPTZ,

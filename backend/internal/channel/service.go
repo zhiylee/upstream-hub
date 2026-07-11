@@ -70,17 +70,18 @@ type Sub2APITokenCredential struct {
 //   - password: Password 必填；Username 为登录账号
 //   - token:    TokenCredential 必填（已序列化为 JSON 字符串）；Username 仅作展示备注
 type CreateInput struct {
-	Name             string
-	Type             storage.ChannelType
-	SiteURL          string
-	Username         string
-	Password         string
-	CredentialMode   storage.CredentialMode
-	TokenCredential  string // JSON：password 模式时为空
-	TurnstileEnabled bool
-	CaptchaConfigID  *uint
-	BalanceThreshold float64
-	MonitorEnabled   bool
+	Name               string
+	Type               storage.ChannelType
+	SiteURL            string
+	Username           string
+	Password           string
+	CredentialMode     storage.CredentialMode
+	TokenCredential    string // JSON：password 模式时为空
+	TurnstileEnabled   bool
+	CaptchaConfigID    *uint
+	BalanceThreshold   float64
+	RechargeMultiplier float64
+	MonitorEnabled     bool
 }
 
 func (s *Service) Create(in CreateInput) (*storage.Channel, error) {
@@ -101,16 +102,17 @@ func (s *Service) Create(in CreateInput) (*storage.Channel, error) {
 		return nil, fmt.Errorf("encrypt credential: %w", err)
 	}
 	c := &storage.Channel{
-		Name:             in.Name,
-		Type:             in.Type,
-		SiteURL:          in.SiteURL,
-		Username:         in.Username,
-		PasswordCipher:   enc,
-		CredentialMode:   mode,
-		TurnstileEnabled: in.TurnstileEnabled && mode == storage.CredentialModePassword, // token 模式不需要打码
-		CaptchaConfigID:  in.CaptchaConfigID,
-		BalanceThreshold: in.BalanceThreshold,
-		MonitorEnabled:   in.MonitorEnabled,
+		Name:               in.Name,
+		Type:               in.Type,
+		SiteURL:            in.SiteURL,
+		Username:           in.Username,
+		PasswordCipher:     enc,
+		CredentialMode:     mode,
+		TurnstileEnabled:   in.TurnstileEnabled && mode == storage.CredentialModePassword, // token 模式不需要打码
+		CaptchaConfigID:    in.CaptchaConfigID,
+		BalanceThreshold:   in.BalanceThreshold,
+		RechargeMultiplier: normalizeRechargeMultiplier(in.RechargeMultiplier),
+		MonitorEnabled:     in.MonitorEnabled,
 	}
 	if mode == storage.CredentialModeToken {
 		// token 模式不依赖打码 provider
@@ -124,16 +126,17 @@ func (s *Service) Create(in CreateInput) (*storage.Channel, error) {
 
 // UpdateInput 编辑渠道的可选字段。Password / TokenCredential 为空表示不修改凭据。
 type UpdateInput struct {
-	Name             *string
-	SiteURL          *string
-	Username         *string
-	Password         *string
-	CredentialMode   *storage.CredentialMode
-	TokenCredential  *string // JSON
-	TurnstileEnabled *bool
-	CaptchaConfigID  *uint
-	BalanceThreshold *float64
-	MonitorEnabled   *bool
+	Name               *string
+	SiteURL            *string
+	Username           *string
+	Password           *string
+	CredentialMode     *storage.CredentialMode
+	TokenCredential    *string // JSON
+	TurnstileEnabled   *bool
+	CaptchaConfigID    *uint
+	BalanceThreshold   *float64
+	RechargeMultiplier *float64
+	MonitorEnabled     *bool
 }
 
 func (s *Service) Update(id uint, in UpdateInput) (*storage.Channel, error) {
@@ -141,6 +144,7 @@ func (s *Service) Update(id uint, in UpdateInput) (*storage.Channel, error) {
 	if err != nil {
 		return nil, err
 	}
+	oldRechargeMultiplier := c.EffectiveRechargeMultiplier()
 	if in.Name != nil {
 		c.Name = *in.Name
 	}
@@ -214,10 +218,16 @@ func (s *Service) Update(id uint, in UpdateInput) (*storage.Channel, error) {
 	if in.BalanceThreshold != nil {
 		c.BalanceThreshold = *in.BalanceThreshold
 	}
+	if in.RechargeMultiplier != nil {
+		c.RechargeMultiplier = normalizeRechargeMultiplier(*in.RechargeMultiplier)
+	}
+	c.RechargeMultiplier = normalizeRechargeMultiplier(c.RechargeMultiplier)
 	if in.MonitorEnabled != nil {
 		c.MonitorEnabled = *in.MonitorEnabled
 	}
-	if err := s.Channels.Update(c); err != nil {
+	newRechargeMultiplier := c.EffectiveRechargeMultiplier()
+	metricScale := oldRechargeMultiplier / newRechargeMultiplier
+	if err := s.Channels.UpdateWithMetricScale(c, metricScale); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -273,6 +283,13 @@ func validateCredential(channelType storage.ChannelType, mode storage.Credential
 		return fmt.Errorf("unknown channel type: %s", channelType)
 	}
 	return nil
+}
+
+func normalizeRechargeMultiplier(v float64) float64 {
+	if v > 0 {
+		return v
+	}
+	return 1
 }
 
 func (s *Service) Delete(id uint) error {

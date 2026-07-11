@@ -48,7 +48,7 @@ type AuthSession struct {
 	ExpiresAt   time.Time
 }
 
-// BalanceResult 一次余额采集结果。Balance 已经换算成显示单位（一般是 USD 等值）。
+// BalanceResult 一次余额采集结果。Balance 是上游接口的账号余额单位；渠道充值倍率由 monitor 层统一换算。
 type BalanceResult struct {
 	Balance   float64
 	SampledAt time.Time
