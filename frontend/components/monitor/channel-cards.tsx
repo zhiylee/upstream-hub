@@ -65,11 +65,11 @@ function ratioTone(r: number): string {
   return "bg-muted text-foreground ring-border"
 }
 
-/** InlineRates 在渠道卡片内部展示当前所有分组倍率，默认 2 行折叠 + 展开按钮。 */
+/** InlineRates 在渠道卡片内部展示当前所有分组倍率，可折叠为 2 行。 */
 function InlineRates({ channelID }: { channelID: number }) {
   const { data, loading } = useChannelRates(channelID)
   const rates = [...(data ?? [])].sort((a, b) => a.ratio - b.ratio)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [hasOverflow, setHasOverflow] = useState(false)
   const chipBoxRef = useRef<HTMLDivElement>(null)
 
