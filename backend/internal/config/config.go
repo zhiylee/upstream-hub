@@ -179,9 +179,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.maxOpenConns", 20)
 	v.SetDefault("database.maxIdleConns", 5)
 
-	// CLAUDE.md 默认建议：余额 15 分钟，倍率 30 分钟。
-	v.SetDefault("scheduler.balanceCron", "37 */15 * * * *")
-	v.SetDefault("scheduler.rateCron", "13 */30 * * * *")
+	// 余额和倍率默认每小时扫描一次，并错开执行秒数。
+	v.SetDefault("scheduler.balanceCron", "37 0 * * * *")
+	v.SetDefault("scheduler.rateCron", "13 0 * * * *")
 	v.SetDefault("scheduler.concurrency", 4)
 
 	// 历史清理：每天凌晨 3:17 跑一次（6 字段 cron 含秒），

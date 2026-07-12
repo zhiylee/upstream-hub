@@ -35,11 +35,11 @@ export default function SettingsPage() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{"余额扫描"}</span>
-              <span className="font-medium">{"每 15 分钟"}</span>
+              <span className="font-medium">{"每小时"}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{"倍率扫描"}</span>
-              <span className="font-medium">{"每 30 分钟"}</span>
+              <span className="font-medium">{"每小时"}</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
               {"修改 backend/config.yaml 的 scheduler 段，重启后端生效。"}

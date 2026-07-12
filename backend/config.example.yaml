@@ -34,10 +34,10 @@ auth:
   sessionTTLHours: 168
 
 scheduler:
-  # 余额监控：每 15 分钟（错开 0/30 秒以避免和其他服务同步刷）。
-  balanceCron: "37 */15 * * * *"
-  # 倍率监控：每 30 分钟。
-  rateCron:    "13 */30 * * * *"
+  # 余额监控：每小时（与倍率监控错开执行秒数）。
+  balanceCron: "37 0 * * * *"
+  # 倍率监控：每小时。
+  rateCron:    "13 0 * * * *"
   concurrency: 4
   # 历史数据清理。字段 = 0 表示该表不清理；cron 留空则不启动清理任务。
   # rate_change_logs 永远保留（核心业务数据，体积也小）。
