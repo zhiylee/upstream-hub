@@ -41,7 +41,7 @@ type Deps struct {
 
 // Register 把所有路由挂到给定 gin engine。
 func Register(r *gin.Engine, d *Deps) {
-	r.GET("/healthz", func(c *gin.Context) {
+	healthz := func(c *gin.Context) {
 		sqlDB, err := d.DB.DB()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "down", "err": err.Error()})
@@ -52,7 +52,9 @@ func Register(r *gin.Engine, d *Deps) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	}
+	r.GET("/healthz", healthz)
+	r.HEAD("/healthz", healthz)
 
 	api := r.Group("/api")
 	if d.Auth != nil {
