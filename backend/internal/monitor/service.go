@@ -155,7 +155,9 @@ func (s *Service) RefreshRates(ctx context.Context, c *storage.Channel) error {
 	now := time.Now()
 	metricDivisor := c.EffectiveRechargeMultiplier()
 	changes := make([]notify.RateChange, 0, len(results))
+	seen := make([]string, 0, len(results))
 	for _, r := range results {
+		seen = append(seen, r.ModelName)
 		metricRatio := r.Ratio / metricDivisor
 		metricCompletionRatio := r.CompletionRatio
 		if r.CompletionRatio != 0 {
@@ -198,6 +200,9 @@ func (s *Service) RefreshRates(ctx context.Context, c *storage.Channel) error {
 			NewComp:   metricCompletionRatio,
 			ChangedAt: now,
 		})
+	}
+	if err := s.rates.DeleteMissingByChannel(c.ID, seen); err != nil {
+		return err
 	}
 	// 一次扫描的所有变化打包推送：去抖策略（合并 / 涨跌幅过滤）由 Dispatcher.Policy 决定。
 	if len(changes) > 0 {

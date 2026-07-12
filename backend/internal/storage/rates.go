@@ -47,6 +47,15 @@ func (r *Rates) Upsert(snapshot *RateSnapshot) (*RateSnapshot, error) {
 	}
 }
 
+// DeleteMissingByChannel 删除某渠道不在当前上游返回列表中的旧倍率快照。
+func (r *Rates) DeleteMissingByChannel(channelID uint, modelNames []string) error {
+	q := r.db.Where("channel_id = ?", channelID)
+	if len(modelNames) > 0 {
+		q = q.Where("model_name NOT IN ?", modelNames)
+	}
+	return q.Delete(&RateSnapshot{}).Error
+}
+
 func (r *Rates) AppendChange(log *RateChangeLog) error {
 	if log.ChangedAt.IsZero() {
 		log.ChangedAt = time.Now()
