@@ -9,6 +9,7 @@ export type CredentialMode = "password" | "token"
 
 export type NotificationChannelType =
   | "telegram"
+  | "bark"
   | "webhook"
   | "email"
   | "wecom"

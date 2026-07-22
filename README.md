@@ -18,7 +18,7 @@
 - 余额汇总、充值倍率换算和低余额提醒
 - 模型倍率监控和变化记录
 - Cloudflare Turnstile 打码支持
-- Telegram、Webhook、邮件、企业微信、钉钉、飞书通知
+- Telegram、Bark、Webhook、邮件、企业微信、钉钉、飞书通知
 
 ## 启动方式
 
@@ -80,6 +80,18 @@ UPSTREAMHUB_IMAGE_TAG=0.1.0
 
 - `bot_token`：从 Telegram 的 `@BotFather` 创建机器人后获取。
 - `chat_id`：接收消息的私聊、群组或频道 ID。
+
+### Bark
+
+```json
+{
+	"url": "https://api.day.app/your-device-key/",
+	"group": "upstream-hub"
+}
+```
+
+- `url`：Bark App 中复制的完整推送地址，也支持自建 Bark Server 地址。
+- `group`：可选，设置 Bark 通知分组。
 
 ### Webhook
 

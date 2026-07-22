@@ -31,6 +31,10 @@ RUN pnpm build
 FROM golang:1.23-alpine AS go-builder
 WORKDIR /src
 
+# 国内网络优先使用 Go Module 镜像；构建时可通过 --build-arg GOPROXY=... 覆盖。
+ARG GOPROXY=https://goproxy.cn|https://mirrors.aliyun.com/goproxy/|direct
+ENV GOPROXY=${GOPROXY}
+
 # 先 go.mod / go.sum 走缓存
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download

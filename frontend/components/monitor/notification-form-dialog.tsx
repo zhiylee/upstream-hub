@@ -43,6 +43,9 @@ interface ConfigState {
   // telegram
   bot_token: string
   chat_id: string
+  // bark
+  bark_url: string
+  bark_group: string
   // webhook
   url: string
   method: string
@@ -78,6 +81,8 @@ function emptyConfig(): ConfigState {
   return {
     bot_token: "",
     chat_id: "",
+    bark_url: "",
+    bark_group: "",
     url: "",
     method: "POST",
     headers: "",
@@ -125,6 +130,13 @@ function buildConfigByType(type: NotificationChannelType, cfg: ConfigState): str
         bot_token: cfg.bot_token,
         chat_id: cfg.chat_id,
       })
+    case "bark": {
+      const url = cfg.bark_url.trim()
+      if (!url) throw new Error("Bark 推送地址不能为空")
+      const body: Record<string, unknown> = { url }
+      if (cfg.bark_group.trim()) body.group = cfg.bark_group.trim()
+      return JSON.stringify(body)
+    }
     case "webhook": {
       const body: Record<string, unknown> = { url: cfg.url }
       if (cfg.method && cfg.method !== "POST") body.method = cfg.method
@@ -227,6 +239,8 @@ export function NotificationFormDialog({
         switch (form.type) {
           case "telegram":
             return !!(form.cfg.bot_token || form.cfg.chat_id)
+          case "bark":
+            return !!(form.cfg.bark_url || form.cfg.bark_group)
           case "webhook":
             return !!form.cfg.url
           case "email":
@@ -314,6 +328,7 @@ export function NotificationFormDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="telegram">Telegram</SelectItem>
+                <SelectItem value="bark">Bark</SelectItem>
                 <SelectItem value="webhook">Webhook</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="wecom">企业微信</SelectItem>
@@ -449,6 +464,37 @@ function ConfigFields({ type, cfg, updateCfg, disabled, isEdit }: ConfigFieldsPr
             value={cfg.chat_id}
             onChange={(e) => updateCfg({ chat_id: e.target.value })}
             required={!isEdit}
+            disabled={disabled}
+          />
+        </div>
+        {hint}
+      </div>
+    )
+  }
+
+  if (type === "bark") {
+    return (
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <p className="text-xs font-medium text-muted-foreground">Bark</p>
+        <div className="space-y-1.5">
+          <Label htmlFor="bark-url">推送地址</Label>
+          <Input
+            id="bark-url"
+            type="password"
+            placeholder="https://api.day.app/你的设备Key/"
+            value={cfg.bark_url}
+            onChange={(e) => updateCfg({ bark_url: e.target.value })}
+            required={!isEdit}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="bark-group">通知分组（可选）</Label>
+          <Input
+            id="bark-group"
+            placeholder="upstream-hub"
+            value={cfg.bark_group}
+            onChange={(e) => updateCfg({ bark_group: e.target.value })}
             disabled={disabled}
           />
         </div>

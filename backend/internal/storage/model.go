@@ -151,11 +151,12 @@ type BalanceSnapshot struct {
 
 func (BalanceSnapshot) TableName() string { return "balance_snapshots" }
 
-// NotificationChannelType 通知渠道类型。第一版至少 telegram，其它预留。
+// NotificationChannelType 通知渠道类型。
 type NotificationChannelType string
 
 const (
 	NotifyTelegram NotificationChannelType = "telegram"
+	NotifyBark     NotificationChannelType = "bark"
 	NotifyWebhook  NotificationChannelType = "webhook"
 	NotifyEmail    NotificationChannelType = "email"
 	NotifyWecom    NotificationChannelType = "wecom"

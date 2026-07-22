@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import {
   AlertTriangle,
   ArrowUpRight,
+  BellRing,
   KeyRound,
   Pencil,
   Plus,
@@ -204,6 +205,7 @@ export function CaptchaStatus() {
 
 const notifyTypeIcon: Partial<Record<NotificationChannelType, LucideIcon>> = {
   telegram: Send,
+  bark: BellRing,
   webhook: Send,
   email: Send,
   wecom: Send,
