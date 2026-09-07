@@ -11,11 +11,13 @@ import {
 
 interface RefreshContextValue {
   tick: number
+  manualTick: number
   bump: () => void
 }
 
 const RefreshContext = createContext<RefreshContextValue>({
   tick: 0,
+  manualTick: 0,
   bump: () => {},
 })
 
@@ -24,7 +26,11 @@ const POLL_INTERVAL_MS = 30_000
 
 export function RefreshProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState(0)
-  const bump = useCallback(() => setTick((t) => t + 1), [])
+  const [manualTick, setManualTick] = useState(0)
+  const bump = useCallback(() => {
+    setTick((t) => t + 1)
+    setManualTick((t) => t + 1)
+  }, [])
 
   // 30 秒静默 polling。页面在后台标签时（document.hidden）不轮询，避免后台浪费请求。
   useEffect(() => {
@@ -36,7 +42,7 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <RefreshContext.Provider value={{ tick, bump }}>
+    <RefreshContext.Provider value={{ tick, manualTick, bump }}>
       {children}
     </RefreshContext.Provider>
   )
@@ -45,6 +51,11 @@ export function RefreshProvider({ children }: { children: ReactNode }) {
 /** useRefreshTick 在 tick 变化时让组件重新拉数据。 */
 export function useRefreshTick() {
   return useContext(RefreshContext).tick
+}
+
+/** useManualRefreshTick 仅在用户主动刷新时变化，不覆盖组件自己的轮询周期。 */
+export function useManualRefreshTick() {
+  return useContext(RefreshContext).manualTick
 }
 
 /** useTriggerRefresh 返回手动 bump 的方法，比如点头部的"刷新"按钮。 */

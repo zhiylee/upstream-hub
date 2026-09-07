@@ -30,6 +30,7 @@ type Deps struct {
 	Notifies   *storage.Notifications
 	Rates      *storage.Rates
 	MonLogs    *storage.MonitorLogs
+	Sub2APIOps *storage.Sub2APIOpsConfigs
 	ChannelSvc *channel.Service
 	Monitor    *monitor.Service
 	Dispatcher *notify.Dispatcher
@@ -72,6 +73,7 @@ func Register(r *gin.Engine, d *Deps) {
 		registerRates(api, d)
 		registerMonitorLogs(api, d)
 		registerDashboard(api, d)
+		registerSub2APIOps(api, d)
 	}
 
 	if d.Frontend != nil {

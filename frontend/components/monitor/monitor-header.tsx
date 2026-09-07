@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTheme } from "next-themes"
-import { Activity, Github, LogOut, RefreshCw, Sun, Moon } from "lucide-react"
+import { Activity, Github, LayoutDashboard, LogOut, Menu, RefreshCw, ServerCog, Sun, Moon } from "lucide-react"
+import { NavLink, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +27,7 @@ export function MonitorHeader() {
   const { username, authDisabled, logout } = useAuth()
   const refresh = useTriggerRefresh()
   const channels = useChannels()
+  const location = useLocation()
   const [mounted, setMounted] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
@@ -52,20 +62,44 @@ export function MonitorHeader() {
     <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-360 items-center justify-between gap-4 px-5">
         {/* left: logo + title */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <div className="flex size-8 items-center justify-center rounded-lg bg-foreground text-background">
             <Activity className="size-4" strokeWidth={2.5} />
           </div>
-          <h1 className="text-base font-semibold tracking-tight text-foreground">Upstream-hub</h1>
+          <h1 className="hidden text-base font-semibold tracking-tight text-foreground sm:block">Upstream-hub</h1>
+
+          <nav className="ml-3 hidden items-center gap-1 md:flex" aria-label="主导航">
+            <HeaderNavLink to="/" end icon={<LayoutDashboard />}>渠道监控</HeaderNavLink>
+            {authDisabled ? null : (
+              <HeaderNavLink to="/sub2api-ops" icon={<ServerCog />}>Sub2API 运维</HeaderNavLink>
+            )}
+          </nav>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8 md:hidden" aria-label="打开导航">
+                <Menu />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel>监控视图</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><NavLink to="/"><LayoutDashboard />渠道监控</NavLink></DropdownMenuItem>
+              {authDisabled ? null : (
+                <DropdownMenuItem asChild><NavLink to="/sub2api-ops"><ServerCog />Sub2API 运维</NavLink></DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* right: actions */}
         <div className="flex items-center gap-3">
           {/* last collected + refresh */}
-          <div className="hidden items-center gap-2 sm:flex">
+          <div className="hidden items-center gap-2 lg:flex">
             <span className="text-xs text-muted-foreground">
-              {"上次采集 "}
-              <span className="font-medium text-foreground">{relativeTime(lastCollectedAt)}</span>
+              {location.pathname.startsWith("/sub2api-ops") ? "运维数据按组件刷新" : (
+                <>{"上次采集 "}<span className="font-medium text-foreground">{relativeTime(lastCollectedAt)}</span></>
+              )}
             </span>
             <Tooltip delayDuration={200}>
               <TooltipTrigger asChild>
@@ -96,7 +130,7 @@ export function MonitorHeader() {
             size="sm"
             onClick={handleRefresh}
             disabled={syncing}
-            className="gap-1.5 border-border bg-background text-foreground hover:bg-muted sm:hidden"
+            className="gap-1.5 border-border bg-background text-foreground hover:bg-muted lg:hidden"
             aria-label="刷新视图"
           >
             <RefreshCw className={cn("size-3.5", syncing && "animate-spin")} />
@@ -110,7 +144,7 @@ export function MonitorHeader() {
                 asChild
                 variant="outline"
                 size="icon"
-                className="size-8 border-border bg-background text-foreground hover:bg-muted"
+                className="hidden size-8 border-border bg-background text-foreground hover:bg-muted xl:inline-flex"
                 aria-label="GitHub 仓库"
               >
                 <a
@@ -171,5 +205,31 @@ export function MonitorHeader() {
         </div>
       </div>
     </header>
+  )
+}
+
+function HeaderNavLink({
+  to,
+  end,
+  icon,
+  children,
+}: {
+  to: string
+  end?: boolean
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) => cn(
+        "flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors [&_svg]:size-3.5",
+        isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+      )}
+    >
+      {icon}
+      {children}
+    </NavLink>
   )
 }

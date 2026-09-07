@@ -249,3 +249,17 @@ type MonitorLog struct {
 }
 
 func (MonitorLog) TableName() string { return "monitor_logs" }
+
+// Sub2APIOpsConfig 保存独立运维大盘连接和布局。AdminKeyCipher 只在服务端解密，
+// DashboardLayout 则是前端组件注册表对应的非敏感 JSON 配置。
+type Sub2APIOpsConfig struct {
+	ID              uint      `gorm:"primaryKey" json:"id"`
+	Name            string    `gorm:"size:128;not null" json:"name"`
+	SiteURL         string    `gorm:"size:512;not null" json:"site_url"`
+	AdminKeyCipher  string    `gorm:"type:text;not null" json:"-"`
+	DashboardLayout string    `gorm:"type:text;not null" json:"-"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+func (Sub2APIOpsConfig) TableName() string { return "sub2api_ops_configs" }

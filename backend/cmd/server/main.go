@@ -88,6 +88,7 @@ func main() {
 	notifies := storage.NewNotifications(db)
 	rates := storage.NewRates(db)
 	monLogs := storage.NewMonitorLogs(db)
+	sub2APIOpsConfigs := storage.NewSub2APIOpsConfigs(db)
 
 	channelSvc := channel.NewService(channels, authSessions, captchas, monLogs, cipher)
 	dispatcher := notify.NewDispatcher(notifies, cipher, log, notify.Policy{
@@ -132,6 +133,7 @@ func main() {
 		Notifies:   notifies,
 		Rates:      rates,
 		MonLogs:    monLogs,
+		Sub2APIOps: sub2APIOpsConfigs,
 		ChannelSvc: channelSvc,
 		Monitor:    monitorSvc,
 		Dispatcher: dispatcher,
